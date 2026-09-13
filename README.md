@@ -176,14 +176,3 @@ Esto importa por tres razones:
 
 ---
 
-## El logo
-
-En `web/index.html`, en la pantalla de login y en las barras superiores, el
-logo está hecho con texto (`Capital` en azul + `One` en rojo). Para poner el
-archivo oficial que entregaron en el hackathon, reemplaza ese `<div>` por:
-
-```html
-<img src="logo-capital-one.png" alt="Capital One" style="height:34px">
-```
-
-Pon el archivo de imagen en la carpeta `web/` junto al `index.html`.
