@@ -1,0 +1,2429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital One — Banca en Línea</title>
+
+<!--
+  ===========================================================================
+   ARCHIVO 7 de 7:  web/index.html
+
+   ¿QUÉ HACE ESTE ARCHIVO?
+   Es TODO lo que ve el usuario. Tiene CUATRO pantallas dentro del mismo archivo:
+
+      PANTALLA 0 → selección de rol (Cliente o Administrador)
+      PANTALLA 1 → el login (correo y contraseña), simula entrar al banco
+      PANTALLA 2 → la cuenta del cliente, con 5 pestañas:
+                   Resumen · Movimientos · Mi Score · Predicción · Simulador
+      PANTALLA 3 → panel de administrador, lista de todos los clientes
+
+   ¿POR QUÉ LAS CUATRO PANTALLAS ESTÁN EN EL MISMO ARCHIVO?
+   Porque así no hay que recargar la página. Las cuatro existen siempre, pero
+   tres están ESCONDIDAS con la clase "oculto". Al cambiar de opción, escondemos
+   una y mostramos otra. Es instantáneo y se siente como una app de verdad.
+
+   ¿QUÉ SON LAS 3 PARTES DE ESTE ARCHIVO?
+      <style>  → cómo se ve   (colores, tamaños, posiciones)
+      <body>   → qué hay      (los textos, cajas y botones)
+      <script> → qué hace     (qué pasa al hacer clic)
+  ===========================================================================
+-->
+
+<style>
+/* ==========================================================================
+   1) LAS VARIABLES DE COLOR
+
+   ¿QUÉ ES UNA "VARIABLE DE CSS"?
+   Es guardar un color con un nombre, para escribirlo UNA vez y usarlo en
+   cien lugares. Si mañana el banco cambia su azul, cambias esta línea y
+   toda la página se actualiza sola.
+
+   Se escriben con dos guiones al inicio: --nombre: valor;
+   Y se usan así:  color: var(--nombre);
+
+   ESTOS SON LOS COLORES OFICIALES DE CAPITAL ONE:
+   ========================================================================== */
+:root {
+  --azul-profundo:  #023373;  /* El azul principal de la marca. Encabezados. */
+  --azul-medio:     #024873;  /* Un azul más claro. Para degradados y bordes. */
+  --rojo-capital:   #D92525;  /* El rojo de la marca. Botones y alertas.     */
+  --rojo-suave:     #D97171;  /* Rojo pálido. Para avisos menos graves.      */
+  --gris-fondo:     #F2F2F2;  /* El fondo gris clarito de toda la página.    */
+
+  --blanco:         #FFFFFF;
+  --texto-oscuro:   #1A2733;  /* Casi negro, pero con un toque azul.         */
+  --texto-gris:     #6B7785;  /* Para textos secundarios, menos importantes. */
+  --borde:          #DDE3EA;  /* Las líneas que separan cajas.               */
+  --verde-bien:     #1B8A5A;  /* Verde para "todo bien". No es de la marca,  */
+                              /* pero un semáforo necesita verde.            */
+  --ambar-cuidado:  #C77700;  /* Naranja para "ten cuidado".                 */
+}
+
+/* --------------------------------------------------------------------------
+   2) REGLA GENERAL PARA TODOS LOS ELEMENTOS
+
+   El asterisco (*) significa "absolutamente todo lo que haya en la página".
+
+   box-sizing: border-box  →  Esta línea evita el dolor de cabeza más común
+   del diseño web. Sin ella, si le pones a una caja 100px de ancho y 20px de
+   relleno, la caja mide 140px (se suma el relleno por fuera). Con ella, la
+   caja mide 100px exactos y el relleno va por DENTRO. Que es como uno lo
+   imagina en la cabeza.
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* La lista de tipografías es un plan B: si la computadora no tiene la
+     primera, prueba la segunda, y así. Termina en "sans-serif" que existe
+     en todas las máquinas del mundo. */
+  font-family: "Segoe UI", -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  background: var(--gris-fondo);
+  color: var(--texto-oscuro);
+  /* line-height 1.5 = el espacio entre renglones es 1.5 veces la letra.
+     Hace el texto mucho más cómodo de leer que el 1.0 de por defecto. */
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   3) LA CLASE MÁS IMPORTANTE DEL ARCHIVO: "oculto"
+
+   display: none  →  hace que el elemento desaparezca por completo, como si
+   no existiera. No deja hueco ni espacio en blanco.
+
+   El JavaScript de abajo agrega y quita esta clase para cambiar de pantalla
+   y de pestaña. Es el truco central de toda la interfaz.
+
+   El "!important" significa "esta regla gana sobre cualquier otra". Se usa
+   con cuidado, pero aquí es justo lo que queremos: si algo tiene la clase
+   "oculto", DEBE estar escondido, sin excepciones.
+   -------------------------------------------------------------------------- */
+.oculto { display: none !important; }
+
+
+/* ==========================================================================
+   PANTALLA 1 — EL LOGIN
+   ========================================================================== */
+
+#pantallaLogin {
+  /* min-height: 100vh  →  "vh" significa viewport height (alto de la
+     ventana). 100vh = ocupa exactamente toda la altura de la pantalla,
+     sin importar el tamaño del monitor o del celular. */
+  min-height: 100vh;
+
+  /* Estas 3 líneas juntas son la forma moderna de centrar algo. */
+  display: flex;              /* Activa el modo de acomodo flexible.       */
+  align-items: center;        /* Centra en vertical  (arriba-abajo).       */
+  justify-content: center;    /* Centra en horizontal (izquierda-derecha). */
+
+  padding: 24px;
+
+  /* Un degradado diagonal entre los dos azules de la marca.
+     "135deg" es el ángulo: va de la esquina superior izquierda a la
+     inferior derecha. */
+  background: linear-gradient(135deg, var(--azul-profundo) 0%, var(--azul-medio) 100%);
+}
+
+.caja-login {
+  background: var(--blanco);
+  width: 100%;
+  max-width: 420px;         /* Nunca más ancha que esto, aunque haya lugar. */
+  border-radius: 14px;      /* Esquinas redondeadas.                        */
+  padding: 40px 36px;
+  /* box-shadow: sombra. Los 4 números son:
+     horizontal, vertical, qué tan difuminada, y el color.
+     El "rgba" lleva un 4º número (0.25) que es la transparencia. */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.logo-login {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.logo-texto {
+  font-size: 26px;
+  font-weight: 700;                /* 700 = negritas. 400 = normal. */
+  color: var(--azul-profundo);
+  letter-spacing: -0.5px;          /* Junta un poquito las letras. */
+}
+
+.logo-texto span {
+  color: var(--rojo-capital);      /* Solo la palabra "One" va en rojo. */
+}
+
+.subtitulo-login {
+  text-align: center;
+  color: var(--texto-gris);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+/* Cada bloque de "etiqueta + caja de texto" */
+.campo {
+  margin-bottom: 18px;
+}
+
+.campo label {
+  display: block;           /* Hace que la etiqueta ocupe su propio renglón. */
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--texto-oscuro);
+}
+
+.campo input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;     /* Usa la misma letra del resto de la página. */
+  /* transition: hace que el cambio de color al hacer clic sea suave en
+     vez de brusco. 0.15s son 15 centésimas de segundo. */
+  transition: border-color 0.15s;
+}
+
+/* ":focus" es el estado de "el usuario hizo clic aquí y está escribiendo". */
+.campo input:focus {
+  outline: none;                        /* Quita el borde feo del navegador. */
+  border-color: var(--azul-medio);      /* Y pone el nuestro, azul.          */
+}
+
+.boton-entrar {
+  width: 100%;
+  padding: 13px;
+  background: var(--rojo-capital);
+  color: var(--blanco);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;          /* La flecha se vuelve manita al pasar encima. */
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+
+/* ":hover" = cuando el mouse está encima, sin haber hecho clic todavía. */
+.boton-entrar:hover { background: #B91E1E; }
+
+/* ":disabled" = cuando el botón está bloqueado (mientras carga). */
+.boton-entrar:disabled { background: #999; cursor: not-allowed; }
+
+/* El mensaje rojo de "contraseña incorrecta" */
+.error-login {
+  background: #FDEAEA;
+  color: var(--rojo-capital);
+  border: 1px solid var(--rojo-suave);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* La cajita gris de abajo con las cuentas de prueba */
+.cuentas-demo {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--borde);
+}
+
+.cuentas-demo h4 {
+  font-size: 11px;
+  text-transform: uppercase;   /* Convierte el texto a MAYÚSCULAS. */
+  letter-spacing: 0.8px;       /* Separa las letras. Se ve más formal. */
+  color: var(--texto-gris);
+  margin-bottom: 10px;
+}
+
+.fila-demo {
+  display: flex;
+  justify-content: space-between;  /* Empuja los extremos a cada lado. */
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.fila-demo:hover { background: var(--gris-fondo); }
+
+.fila-demo .cred {
+  /* "monospace" = letra de máquina de escribir, donde todas las letras
+     miden lo mismo. Se usa para contraseñas y códigos porque así no se
+     confunde una l con un 1. */
+  font-family: "Consolas", monospace;
+  color: var(--texto-gris);
+  font-size: 12px;
+}
+
+
+/* ==========================================================================
+   PANTALLA 2 — EL BANCO POR DENTRO
+   ========================================================================== */
+
+/* ---- La barra azul de hasta arriba ---- */
+.barra-superior {
+  background: var(--azul-profundo);
+  color: var(--blanco);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* flex-wrap: si no caben en un renglón, que se pasen al siguiente.
+     Esto es lo que hace que se vea bien en celular. */
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.barra-superior .logo-texto { color: var(--blanco); font-size: 20px; }
+.barra-superior .logo-texto span { color: #FF6B6B; }
+
+.usuario-barra {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.boton-salir {
+  background: transparent;                     /* Sin relleno.  */
+  border: 1px solid rgba(255,255,255,0.4);     /* Borde blanco semi. */
+  color: var(--blanco);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.boton-salir:hover { background: rgba(255,255,255,0.15); }
+
+/* ---- El contenedor que centra todo el contenido ---- */
+.contenido {
+  max-width: 1080px;
+  margin: 0 auto;        /* "auto" a los lados = centrado horizontal. */
+  padding: 24px;
+}
+
+/* ---- La tarjeta grande del saldo ---- */
+.tarjeta-saldo {
+  background: linear-gradient(120deg, var(--azul-profundo), var(--azul-medio));
+  color: var(--blanco);
+  border-radius: 14px;
+  padding: 26px 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 6px 20px rgba(2,51,115,0.25);
+}
+
+.etiqueta-saldo {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;           /* 0.8 = 80% visible. Lo hace más tenue. */
+}
+
+.monto-saldo {
+  font-size: 40px;
+  font-weight: 700;
+  margin: 4px 0 10px;
+  /* Esta línea hace que los números tengan todos el mismo ancho, para que
+     no "bailen" al actualizarse. Se llama numeración tabular. */
+  font-variant-numeric: tabular-nums;
+}
+
+.datos-cuenta {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  opacity: 0.9;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  padding-top: 14px;
+  margin-top: 6px;
+}
+
+/* ---- Las pestañas (Resumen, Movimientos, etc.) ---- */
+.pestanas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--borde);
+  margin-bottom: 22px;
+  /* overflow-x: auto  →  si no caben las 5 pestañas (en un celular),
+     aparece una barrita para deslizarlas de lado en vez de romperse. */
+  overflow-x: auto;
+}
+
+.pestana {
+  background: none;
+  border: none;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--texto-gris);
+  cursor: pointer;
+  /* El borde de abajo es transparente para que, al activarse, la pestaña
+     no "brinque" hacia arriba. El espacio ya estaba reservado. */
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;     /* No partir el texto en dos renglones. */
+  font-family: inherit;
+}
+
+.pestana:hover { color: var(--azul-profundo); }
+
+/* La clase "activa" la pone y la quita el JavaScript al hacer clic. */
+.pestana.activa {
+  color: var(--azul-profundo);
+  border-bottom-color: var(--rojo-capital);
+  font-weight: 600;
+}
+
+/* ---- Las cajas blancas donde vive cada bloque de información ---- */
+.tarjeta {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.tarjeta h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: var(--azul-profundo);
+}
+
+.tarjeta .ayuda {
+  font-size: 13px;
+  color: var(--texto-gris);
+  margin-bottom: 16px;
+}
+
+/* ---- La rejilla de los 4 indicadores ---- */
+.rejilla {
+  display: grid;
+  /* Esta línea es magia y vale la pena entenderla:
+       auto-fit   = acomoda tantas columnas como quepan
+       minmax(A,B)= cada columna mide mínimo A y máximo B
+     Resultado: en una pantalla ancha salen 4 columnas, en una laptop 2,
+     y en un celular 1. Todo sin escribir una sola regla extra. */
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.indicador {
+  background: var(--gris-fondo);
+  border-radius: 10px;
+  padding: 16px;
+  /* El borde izquierdo de color es el detalle que le da identidad. */
+  border-left: 4px solid var(--azul-medio);
+}
+
+.indicador .titulo {
+  font-size: 12px;
+  color: var(--texto-gris);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.indicador .valor {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--azul-profundo);
+  margin: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicador .detalle {
+  font-size: 12px;
+  color: var(--texto-gris);
+}
+
+/* ---- La lista de movimientos (entradas y salidas) ---- */
+.movimiento {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--borde);
+  gap: 12px;
+}
+
+/* ":last-child" = el último de la lista. Le quitamos la rayita de abajo
+   para que no quede una línea suelta al final. */
+.movimiento:last-child { border-bottom: none; }
+
+.movimiento .quien { font-weight: 600; font-size: 14px; }
+.movimiento .cuando { font-size: 12px; color: var(--texto-gris); }
+
+.movimiento .cantidad {
+  font-weight: 700;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.entrada { color: var(--verde-bien); }   /* Dinero que llega: verde. */
+.salida  { color: var(--rojo-capital); } /* Dinero que se va:  rojo.  */
+
+/* ---- El score grande ---- */
+.caja-score {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.numero-score {
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.categoria-score {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;   /* Muy redondeado = forma de píldora. */
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blanco);
+}
+
+/* ---- Las 6 barras del desglose del score ---- */
+.barra-fila { margin-bottom: 15px; }
+
+.barra-encabezado {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.barra-fondo {
+  height: 9px;
+  background: var(--borde);
+  border-radius: 5px;
+  overflow: hidden;   /* Recorta el relleno para que respete las esquinas. */
+}
+
+.barra-relleno {
+  height: 100%;
+  background: var(--azul-medio);
+  border-radius: 5px;
+  /* La barra crece con animación en medio segundo en vez de aparecer de
+     golpe. Es un detalle chico que hace que se sienta caro. */
+  transition: width 0.5s ease-out;
+}
+
+.barra-nota {
+  font-size: 12px;
+  color: var(--texto-gris);
+  margin-top: 3px;
+}
+
+/* ---- El simulador de compras ---- */
+.fila-simulador {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.fila-simulador .campo { margin-bottom: 0; flex: 1; min-width: 170px; }
+
+.boton-azul {
+  background: var(--azul-profundo);
+  color: var(--blanco);
+  border: none;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.boton-azul:hover { background: var(--azul-medio); }
+
+/* Los 3 botones de montos rápidos */
+.montos-rapidos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.chip {
+  background: var(--gris-fondo);
+  border: 1px solid var(--borde);
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.chip:hover { background: #E4E9EF; }
+
+/* El recuadro de resultado del semáforo. El color del borde lo pone el JS. */
+.resultado-compra {
+  border-radius: 10px;
+  padding: 18px;
+  border-left: 5px solid;
+  margin-bottom: 18px;
+}
+
+.resultado-compra .veredicto { font-size: 17px; font-weight: 700; margin-bottom: 5px; }
+
+/* ---- El aviso amarillo o rojo de la predicción ---- */
+.alerta {
+  border-radius: 10px;
+  padding: 15px 18px;
+  margin-bottom: 18px;
+  border-left: 5px solid;
+  font-size: 14px;
+}
+
+.alerta.peligro  { background: #FDEAEA; border-color: var(--rojo-capital); }
+.alerta.tranquilo{ background: #E8F5EE; border-color: var(--verde-bien); }
+
+/* ---- La leyenda que explica la gráfica ---- */
+.leyenda {
+  background: var(--gris-fondo);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.leyenda-fila { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+
+.muestra {
+  width: 22px; height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;     /* No dejar que se encoja si falta espacio. */
+}
+
+/* ---- El cuadro del consejo de la IA ---- */
+.consejo {
+  background: #EEF3F9;
+  border-left: 5px solid var(--azul-medio);
+  border-radius: 10px;
+  padding: 18px;
+  font-size: 14px;
+}
+
+.consejo .firma { font-size: 12px; color: var(--texto-gris); margin-top: 10px; }
+
+/* ---- El mensajito de "cargando..." ---- */
+.cargando { text-align: center; padding: 40px; color: var(--texto-gris); }
+
+/* --------------------------------------------------------------------------
+   AJUSTES PARA PANTALLAS CHICAS (celulares)
+
+   "@media" aplica reglas solo cuando se cumple una condición. Aquí:
+   "si la pantalla mide 520px de ancho o menos, usa estos tamaños".
+   -------------------------------------------------------------------------- */
+@media (max-width: 520px) {
+  .monto-saldo  { font-size: 32px; }
+  .numero-score { font-size: 46px; }
+  .contenido    { padding: 16px; }
+  .caja-login   { padding: 30px 22px; }
+}
+
+
+/* ==========================================================================
+   PANTALLA 3 y 4 — EL PANEL DEL ANALISTA (administrador)
+   ========================================================================== */
+
+/* ---- El aviso amarillo de "esto queda registrado" ---- */
+.aviso-rls {
+  background: #FFF8E6;
+  border: 1px solid #E8D9A8;
+  border-left: 4px solid var(--ambar-cuidado);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  color: #6B5A2A;
+  margin-bottom: 22px;
+}
+
+/* ---- El botón "Ver análisis" de cada fila de la tabla ---- */
+.boton-ver {
+  background: var(--azul-profundo);
+  color: var(--blanco);
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.boton-ver:hover { background: var(--azul-medio); }
+
+/* ==========================================================================
+   PANTALLA 3 — PANEL DE ADMINISTRADOR (Lista de Clientes)
+   ========================================================================== */
+
+#pantallaAdmin {
+  background: var(--gris-fondo);
+}
+
+.barra-admin {
+  background: var(--azul-profundo);
+  color: var(--blanco);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.barra-admin h2 {
+  font-size: 22px;
+}
+
+.boton-volver {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.4);
+  color: var(--blanco);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+.boton-volver:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.contenido-admin {
+  padding: 32px 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.tabla-clientes {
+  background: var(--blanco);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.tabla-clientes table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-clientes th {
+  background: #F5F8FB;
+  padding: 16px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--texto-oscuro);
+  border-bottom: 2px solid var(--borde);
+}
+
+.tabla-clientes td {
+  padding: 16px;
+  border-bottom: 1px solid var(--borde);
+  font-size: 14px;
+}
+
+.tabla-clientes tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-clientes tr:hover {
+  background: #FAFBFC;
+}
+
+.score-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.score-badge.bajo {
+  background: #D4EDDA;
+  color: var(--verde-bien);
+}
+
+.score-badge.medio {
+  background: #FFF3CD;
+  color: var(--ambar-cuidado);
+}
+
+.score-badge.alto {
+  background: #F8D7DA;
+  color: var(--rojo-capital);
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ==========================================================================
+     PANTALLA 1 — LOGIN
+
+     Es la ÚNICA puerta de entrada, para clientes y para empleados por igual.
+
+     ¿POR QUÉ NO HAY UN BOTÓN DE "ENTRAR COMO ADMINISTRADOR"?
+     Porque anunciar dónde está la puerta del personal es regalarle la mitad
+     del trabajo a quien quiera atacarla. Aquí todos escriben su correo y su
+     contraseña en el mismo lugar, y es el SERVIDOR quien decide, según la
+     cuenta, qué panel te toca. Desde afuera no se nota la diferencia.
+     ========================================================================== -->
+<div id="pantallaLogin">
+
+  <div class="caja-login">
+
+    <div class="logo-login">
+      <!-- AQUÍ VA EL LOGO OFICIAL cuando lo tengas. Reemplaza el div de
+           abajo por:   <img src="logo-capital-one.png" style="height:34px">
+           y pon el archivo de imagen en esta misma carpeta (web/). -->
+      <div class="logo-texto">Capital<span>One</span></div>
+    </div>
+
+    <p class="subtitulo-login">Banca en línea · Inicia sesión</p>
+
+    <!-- ----------------------------------------------------------------------
+         CAJA DE TEXTO 1: el correo
+
+         El "id" es el nombre con el que el JavaScript lo va a encontrar.
+         Es como ponerle etiqueta a una caja para localizarla después.
+
+         "autocomplete off" evita que el navegador rellene solo el campo con
+         datos guardados, que en una demo frente a jueces se ve desordenado.
+         ---------------------------------------------------------------------- -->
+    <div class="campo">
+      <label for="campoCorreo">Correo o usuario</label>
+      <input type="text" id="campoCorreo" placeholder="maria" autocomplete="off">
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         CAJA DE TEXTO 2: la contraseña
+
+         type="password" hace que se vean puntitos en vez de las letras.
+         Es solo visual: el valor real sigue siendo el texto que escribió.
+         ---------------------------------------------------------------------- -->
+    <div class="campo">
+      <label for="campoContrasena">Contraseña</label>
+      <input type="password" id="campoContrasena" placeholder="123" autocomplete="off">
+    </div>
+
+    <button class="boton-entrar" id="botonEntrar">Iniciar sesión</button>
+
+    <!-- Este error empieza escondido. El JS le quita "oculto" si falla. -->
+    <div class="error-login oculto" id="errorLogin"></div>
+
+    <!-- ----------------------------------------------------------------------
+         LAS CUENTAS DE PRUEBA
+
+         En un banco real esto JAMÁS existiría. Aquí está para que cualquiera
+         pueda probar la demo sin preguntarle la clave a nadie.
+
+         Al hacer clic en una fila, el JS llena los dos campos solo. Es un
+         detalle chico que ahorra tiempo cuando estás presentando.
+         ---------------------------------------------------------------------- -->
+    <div class="cuentas-demo">
+      <h4>Cuentas de demostración — haz clic para llenar</h4>
+
+      <div class="fila-demo" onclick="llenarDemo('maria','123')">
+        <span><strong>María Fernanda</strong> · Diseñadora</span>
+        <span class="cred">maria / 123</span>
+      </div>
+
+      <div class="fila-demo" onclick="llenarDemo('carlos','123')">
+        <span><strong>Carlos Iván</strong> · Programador</span>
+        <span class="cred">carlos / 123</span>
+      </div>
+
+      <div class="fila-demo" onclick="llenarDemo('ana','123')">
+        <span><strong>Ana Sofía</strong> · Fotógrafa</span>
+        <span class="cred">ana / 123</span>
+      </div>
+
+      <!-- --------------------------------------------------------------------
+           La cuenta del personal del banco. Fíjate que se entra por el MISMO
+           formulario: no hay una puerta especial para el administrador.
+           La línea de arriba es solo un separador visual.
+           -------------------------------------------------------------------- -->
+      <div style="border-top:1px dashed var(--borde); margin:10px 0 6px;"></div>
+
+      <div class="fila-demo" onclick="llenarDemo('admin','admin123')">
+        <span><strong>Personal del banco</strong> · Analista</span>
+        <span class="cred">admin / admin123</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ==========================================================================
+     PANTALLA 2 — EL BANCO
+     Empieza escondida con la clase "oculto".
+     ========================================================================== -->
+<div id="pantallaBanco" class="oculto">
+
+  <!-- ---- La barra azul de hasta arriba ---- -->
+  <div class="barra-superior">
+    <div class="logo-texto">Capital<span>One</span></div>
+    <div class="usuario-barra">
+      <!-- El JS escribe aquí el nombre del que entró. -->
+      <span id="saludoUsuario"></span>
+      <button class="boton-salir" id="botonSalir">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="contenido">
+
+    <!-- Se ve un instante mientras el servidor calcula todo. -->
+    <div class="cargando" id="cargando">Cargando tu información...</div>
+
+    <!-- Todo lo demás vive aquí adentro y aparece cuando llegan los datos. -->
+    <div id="todoElBanco" class="oculto">
+
+      <!-- ================= TARJETA DEL SALDO ================= -->
+      <div class="tarjeta-saldo">
+        <div class="etiqueta-saldo">Cuenta de cheques · Saldo disponible</div>
+        <div class="monto-saldo" id="saldoGrande">$0</div>
+        <div class="datos-cuenta">
+          <div>Titular: <strong id="titularCuenta"></strong></div>
+          <div>Cuenta: <strong id="numeroCuenta"></strong></div>
+          <div>Tipo: <strong>Independiente</strong></div>
+        </div>
+      </div>
+
+      <!-- ================= LAS 5 PESTAÑAS =================
+           Cada botón manda a llamar a cambiarPestana() con el nombre de la
+           sección que debe mostrar. El "this" que se manda es el botón mismo,
+           para saber a cuál hay que pintarle la rayita roja abajo.
+           ==================================================== -->
+      <div class="pestanas">
+        <button class="pestana activa" onclick="cambiarPestana('resumen', this)">Resumen</button>
+        <button class="pestana" onclick="cambiarPestana('movimientos', this)">Movimientos</button>
+        <button class="pestana" onclick="cambiarPestana('score', this)">Mi Score</button>
+        <button class="pestana" onclick="cambiarPestana('prediccion', this)">Predicción</button>
+        <button class="pestana" onclick="cambiarPestana('simulador', this)">Simulador de compra</button>
+      </div>
+
+
+      <!-- ============ SECCIÓN 1: RESUMEN ============ -->
+      <div id="seccion-resumen">
+        <div class="tarjeta">
+          <h3>Tu situación en 4 números</h3>
+          <p class="ayuda">
+            Estos cuatro datos salen de tus movimientos de los últimos 3 meses.
+            Ningún banco tradicional los mira; aquí son el centro de todo.
+          </p>
+          <!-- El JS llena esta rejilla con las 4 cajitas. -->
+          <div class="rejilla" id="rejillaIndicadores"></div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>Consejo personalizado</h3>
+          <p class="ayuda">
+            Escrito por una inteligencia artificial. Importante: la IA
+            <strong>no calcula ningún número</strong>, solo explica en español
+            los resultados que ya salieron de las fórmulas.
+          </p>
+          <div class="consejo">
+            <div id="textoConsejo"></div>
+            <div class="firma" id="firmaConsejo"></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ SECCIÓN 2: MOVIMIENTOS ============ -->
+      <div id="seccion-movimientos" class="oculto">
+        <div class="tarjeta">
+          <h3>Dinero que ha entrado</h3>
+          <p class="ayuda">
+            Los pagos que te hicieron tus clientes en los últimos 90 días.
+            Esto es lo que un banco normal no sabe leer, porque no es una
+            nómina fija.
+          </p>
+          <div id="listaEntradas"></div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>Tus pagos fijos del mes</h3>
+          <p class="ayuda">
+            Lo que tienes que pagar sí o sí. La columna de la derecha dice
+            en cuántos días te toca pagarlo.
+          </p>
+          <div id="listaSalidas"></div>
+        </div>
+      </div>
+
+
+      <!-- ============ SECCIÓN 3: MI SCORE ============ -->
+      <div id="seccion-score" class="oculto">
+        <div class="tarjeta">
+          <h3>Tu puntaje de crédito alternativo</h3>
+          <p class="ayuda">
+            La escala va de 300 a 850, la misma que usan los bancos. La
+            diferencia es de dónde sale: no de tus tarjetas, sino de cómo
+            entra y sale tu dinero.
+          </p>
+
+          <div class="caja-score">
+            <div>
+              <div class="numero-score" id="numeroScore">0</div>
+              <div class="categoria-score" id="categoriaScore"></div>
+            </div>
+            <div style="flex:1; min-width:230px;">
+              <p id="explicacionScore" style="margin-bottom:12px;"></p>
+              <div style="font-size:14px;">
+                <div>Línea de crédito sugerida:
+                     <strong id="lineaCredito" style="color:var(--azul-profundo)"></strong></div>
+                <div>Pago mensual que podrías cubrir:
+                     <strong id="pagoMensual"></strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>De dónde salió cada punto</h3>
+          <p class="ayuda">
+            Tu puntaje se arma con 6 partes. El porcentaje entre paréntesis es
+            cuánto pesa esa parte en el total. Aquí no hay caja negra: puedes
+            ver exactamente qué te subió y qué te bajó.
+          </p>
+          <div id="barrasDelScore"></div>
+        </div>
+      </div>
+
+
+      <!-- ============ SECCIÓN 4: PREDICCIÓN ============ -->
+      <div id="seccion-prediccion" class="oculto">
+        <div class="tarjeta">
+          <h3>Tus próximos 21 días</h3>
+          <p class="ayuda">
+            Tomamos tu saldo de hoy, le restamos lo que gastas al día, le
+            restamos tus pagos fijos el día que caen, y le sumamos el pago
+            que esperas. Día por día.
+          </p>
+
+          <!-- El JS decide si este aviso es rojo o verde. -->
+          <div class="alerta" id="avisoPrediccion"></div>
+
+          <!-- La gráfica se dibuja aquí adentro con SVG. -->
+          <div id="graficaPrediccion"></div>
+
+          <div class="leyenda">
+            <strong style="display:block; margin-bottom:9px;">Cómo leer esta gráfica</strong>
+            <div class="leyenda-fila">
+              <span class="muestra" style="background:var(--azul-medio)"></span>
+              <span><strong>La línea azul</strong> es tu dinero. Baja cuando gastas
+                    y sube de golpe el día que te pagan.</span>
+            </div>
+            <div class="leyenda-fila">
+              <span class="muestra" style="background:var(--rojo-capital)"></span>
+              <span><strong>Los puntos rojos</strong> son días en que andarías con
+                    menos de lo que gastas en 3 días. Ahí hay riesgo real.</span>
+            </div>
+            <div class="leyenda-fila">
+              <span class="muestra" style="background:var(--ambar-cuidado)"></span>
+              <span><strong>Los puntos naranjas</strong> son días apretados, pero
+                    todavía manejables.</span>
+            </div>
+            <div class="leyenda-fila">
+              <span class="muestra" style="background:#94A3B8"></span>
+              <span><strong>La raya punteada</strong> es el cero. Si la línea azul
+                    la cruza, ese día te quedas sin dinero.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ SECCIÓN 5: SIMULADOR ============ -->
+      <div id="seccion-simulador" class="oculto">
+        <div class="tarjeta">
+          <h3>¿Me alcanza para comprar esto?</h3>
+          <p class="ayuda">
+            Escribe cuánto cuesta lo que quieres comprar. Volvemos a correr la
+            predicción completa restando ese dinero hoy, y comparamos las dos
+            líneas para que veas el costo real de la compra.
+          </p>
+
+          <div class="montos-rapidos">
+            <button class="chip" onclick="ponerMonto(1500)">$1,500</button>
+            <button class="chip" onclick="ponerMonto(5000)">$5,000</button>
+            <button class="chip" onclick="ponerMonto(12000)">$12,000</button>
+            <button class="chip" onclick="ponerMonto(25000)">$25,000</button>
+          </div>
+
+          <div class="fila-simulador">
+            <div class="campo">
+              <label for="campoMonto">Costo de la compra (pesos)</label>
+              <input type="number" id="campoMonto" value="5000" min="1">
+            </div>
+            <button class="boton-azul" id="botonSimular">Simular</button>
+          </div>
+
+          <!-- El resultado aparece aquí. Empieza escondido. -->
+          <div id="resultadoSimulacion" class="oculto">
+            <div class="resultado-compra" id="cajaVeredicto">
+              <div class="veredicto" id="textoVeredicto"></div>
+              <div id="detalleVeredicto"></div>
+            </div>
+
+            <h3 style="font-size:15px; margin-bottom:4px;">Tu dinero con y sin la compra</h3>
+            <p class="ayuda">
+              La línea azul clara es como ibas. La azul fuerte es como quedarías
+              si compras. La distancia entre las dos es lo que te cuesta.
+            </p>
+            <div id="graficaSimulacion"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- fin de todoElBanco -->
+  </div><!-- fin de contenido -->
+</div><!-- fin de pantallaBanco -->
+
+<!-- ==========================================================================
+     PANTALLA 3 — ADMINISTRADOR
+     Empieza oculta. Al hacer clic "Administrador", se muestra esta pantalla.
+     ========================================================================== -->
+<div id="pantallaAdmin" class="oculto">
+
+  <div class="barra-admin">
+    <div>
+      <div class="logo-texto" style="color:#fff;font-size:20px">Capital<span style="color:#FF6B6B">One</span></div>
+      <div style="font-size:12px;opacity:.75;margin-top:2px">Panel interno · Analista de riesgo</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span id="nombreAdmin" style="font-size:14px"></span>
+      <button class="boton-volver" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="contenido-admin">
+
+    <!-- ----------------------------------------------------------------------
+         Aviso de por qué el analista ve lo que ve. Lo ponemos a la vista
+         porque en un banco real el empleado debe saber que sus consultas
+         quedan registradas. No es decoración: es parte del control.
+         ---------------------------------------------------------------------- -->
+    <div class="aviso-rls">
+      <strong>Acceso de solo lectura.</strong>
+      Tu rol permite consultar las cuentas de los clientes, pero no modificarlas.
+      Cada consulta que haces queda registrada en la bitácora con tu nombre.
+    </div>
+
+    <!-- Las dos pestañas del panel -->
+    <div class="pestanas">
+      <button class="pestana activa" onclick="cambiarPestanaAdmin('tabClientes', this)">Clientes</button>
+      <button class="pestana" onclick="cambiarPestanaAdmin('tabBitacora', this)">Bitácora de seguridad</button>
+    </div>
+
+    <!-- ---------------------------- PESTAÑA 1 ---------------------------- -->
+    <div id="tabClientes">
+      <div id="listaClientesAdmin" class="tabla-clientes">
+        <div class="cargando">Cargando clientes...</div>
+      </div>
+    </div>
+
+    <!-- ---------------------------- PESTAÑA 2 ---------------------------- -->
+    <div id="tabBitacora" class="oculto">
+      <p style="color:var(--texto-gris);font-size:13px;margin:14px 0">
+        Registro de los últimos accesos al sistema. Las filas en rojo son
+        intentos que el sistema <strong>bloqueó</strong>.
+      </p>
+      <div id="listaBitacora" class="tabla-clientes">
+        <div class="cargando">Cargando bitácora...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ==========================================================================
+     PANTALLA 4 — LA FICHA DE UN CLIENTE VISTA POR EL ANALISTA
+
+     Se abre al hacer clic en una fila de la tabla de clientes. Reutiliza
+     exactamente las mismas funciones de pintado que el panel del cliente,
+     porque los datos tienen la misma forma. Lo único que cambia es que
+     arriba hay un botón para regresar a la lista.
+     ========================================================================== -->
+<div id="pantallaFichaAdmin" class="oculto">
+  <div class="barra-admin">
+    <div>
+      <div id="nombreFichaAdmin" style="font-size:18px;font-weight:700"></div>
+      <div style="font-size:12px;opacity:.75;margin-top:2px">Consulta de analista · solo lectura</div>
+    </div>
+    <button class="boton-volver" onclick="volverALaLista()">← Volver a la lista</button>
+  </div>
+  <div class="contenido-admin">
+    <div id="contenedorFichaAdmin"></div>
+  </div>
+</div>
+
+
+<script>
+/* ==========================================================================
+   AQUÍ EMPIEZA EL JAVASCRIPT
+
+   ¿QUÉ ES JAVASCRIPT?
+   Es el idioma que hace que una página REACCIONE. El HTML pone las cosas,
+   el CSS las pinta, y JavaScript hace que pase algo cuando les haces clic.
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   VARIABLES GLOBALES
+
+   "Global" significa que se pueden leer desde cualquier función del archivo.
+   Aquí guardamos lo que necesitamos recordar mientras el usuario navega.
+
+   "let" = una variable que SÍ puede cambiar de valor.
+   "const" = una que NO puede cambiar (la usamos más abajo).
+   -------------------------------------------------------------------------- */
+
+// Quién entró. Guarda "maria", "carlos" o "ana".
+let idDelUsuarioQueEntro = null;
+
+// Aquí guardamos TODO lo que respondió el servidor, para no volver a pedirlo
+// cada vez que el usuario cambia de pestaña. Se pide una sola vez al entrar.
+let datosDelUsuario = null;
+
+
+/* ==========================================================================
+   PARTE 0 — LA PULSERA Y CÓMO SE HABLA CON EL SERVIDOR
+
+   Esta parte es nueva y es la que conecta la interfaz con la seguridad.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   LA PULSERA (el token de sesión).
+
+   Se llena cuando entras correctamente y se borra al salir. Mientras la
+   tengas, es lo que le demuestra al servidor quién eres.
+
+   ¿POR QUÉ ESTÁ EN UNA VARIABLE Y NO EN localStorage?
+
+   localStorage es la memoria del navegador que sobrevive al cerrar la
+   pestaña. Sería más cómodo (no tendrías que volver a entrar), pero tiene
+   un problema serio: CUALQUIER código de JavaScript en la página puede
+   leerlo. Si alguien lograra meter un script malicioso (un ataque que se
+   llama XSS, Cross-Site Scripting), se llevaría tu token y podría entrar
+   como tú desde otra computadora.
+
+   En una variable normal el riesgo es menor, y el costo es que al recargar
+   la página tienes que volver a entrar. Para una demo bancaria, ese es el
+   intercambio correcto.
+
+   (Lo más seguro de todo sería una cookie marcada HttpOnly, que el
+   JavaScript no puede leer ni aunque quiera, pero eso necesita HTTPS y
+   configuración extra del servidor.)
+   -------------------------------------------------------------------------- */
+let miPulsera = null;
+
+// El rol que me dio el servidor: "cliente" o "admin".
+let miRol = null;
+
+// Cuando el analista abre la ficha de alguien, aquí guardamos de quién es.
+let clienteQueEstoyViendo = null;
+
+
+/* --------------------------------------------------------------------------
+   FUNCIÓN:  pedirAlServidor
+
+   TODAS las peticiones del programa pasan por aquí. Ninguna función llama
+   a fetch() por su cuenta.
+
+   ¿POR QUÉ CENTRALIZAR ESTO?
+   Por la misma razón que en el servidor: un solo camino es más fácil de
+   cuidar. Si cada función armara su propia petición, tarde o temprano a
+   una se le olvidaría mandar el token, o no revisaría si la sesión venció.
+   Así hay un solo lugar donde eso puede salir mal, y ya está resuelto.
+
+   ¿QUÉ ES "fetch"?
+   Es la función del navegador para pedirle cosas a un servidor. Es lo que
+   pasa por debajo cuando una página carga datos sin recargarse.
+
+   PARÁMETROS:
+      direccion → a dónde pedir, ej: "/api/analisis/maria"
+      opciones  → datos extra para peticiones POST (opcional)
+   -------------------------------------------------------------------------- */
+async function pedirAlServidor(direccion, opciones = {}) {
+
+  // ------------------------------------------------------------------------
+  // Armamos los encabezados de la petición.
+  //
+  // "Content-Type: application/json" le avisa al servidor que lo que
+  // mandamos está escrito en formato JSON.
+  // ------------------------------------------------------------------------
+  const encabezados = { "Content-Type": "application/json" };
+
+  // ------------------------------------------------------------------------
+  // Si tenemos pulsera, la agregamos al encabezado Authorization.
+  //
+  // El formato "Bearer <token>" es el estándar de internet. La palabra
+  // Bearer significa "portador": quien traiga esto es quien dice ser.
+  //
+  // Los acentos graves ` ` permiten meter variables dentro del texto con
+  // ${...}. Es más cómodo que pegar textos con +.
+  // ------------------------------------------------------------------------
+  if (miPulsera) {
+    encabezados["Authorization"] = `Bearer ${miPulsera}`;
+  }
+
+  const respuesta = await fetch(direccion, { ...opciones, headers: encabezados });
+
+  // ------------------------------------------------------------------------
+  // Si el servidor responde 401, la sesión venció o el token ya no sirve.
+  //
+  // No intentamos nada raro: sacamos al usuario al login. Es lo correcto y
+  // lo que hacen los bancos. Quedarse en una pantalla con datos viejos y
+  // botones que ya no funcionan es peor experiencia que volver a entrar.
+  // ------------------------------------------------------------------------
+  if (respuesta.status === 401) {
+    miPulsera = null;
+    mostrarSolo("pantallaLogin");
+    mostrarError("Tu sesión venció por seguridad. Vuelve a entrar.");
+    // "throw" corta la ejecución aquí, para que quien llamó no siga
+    // trabajando con datos que nunca llegaron.
+    throw new Error("sesion vencida");
+  }
+
+  return respuesta;
+}
+
+
+/* --------------------------------------------------------------------------
+   FUNCIÓN:  mostrarSolo
+
+   Enseña una pantalla y esconde las otras tres.
+
+   Antes cada función escondía y mostraba pantallas a mano, y era fácil
+   dejar dos visibles al mismo tiempo por descuido. Con esta función solo
+   hay que decir cuál quieres ver.
+
+   El "for ... of" recorre la lista de las cuatro pantallas.
+   -------------------------------------------------------------------------- */
+function mostrarSolo(idDeLaPantalla) {
+  const todas = ["pantallaLogin", "pantallaBanco", "pantallaAdmin", "pantallaFichaAdmin"];
+  for (const id of todas) {
+    const elemento = document.getElementById(id);
+    // classList.toggle(clase, condicion) pone la clase si la condición es
+    // verdadera y la quita si es falsa. Aquí: esconde todas menos la pedida.
+    elemento.classList.toggle("oculto", id !== idDeLaPantalla);
+  }
+}
+
+
+/* ==========================================================================
+   PARTE 0.5 — EL PANEL DEL ANALISTA (administrador)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Cambia entre las dos pestañas del panel de administrador.
+   -------------------------------------------------------------------------- */
+function cambiarPestanaAdmin(cualMostrar, botonQueSeApreto) {
+
+  // Escondemos las dos secciones y mostramos solo la pedida.
+  for (const id of ["tabClientes", "tabBitacora"]) {
+    document.getElementById(id).classList.toggle("oculto", id !== cualMostrar);
+  }
+
+  // Pintamos de azul el botón que se apretó y apagamos los demás.
+  // querySelectorAll busca TODOS los elementos que cumplan; aquí, todos los
+  // botones con clase "pestana" que estén dentro de la pantalla de admin.
+  const botones = document.querySelectorAll("#pantallaAdmin .pestana");
+  for (const b of botones) b.classList.remove("activa");
+  botonQueSeApreto.classList.add("activa");
+
+  // La bitácora se pide al servidor solo cuando la abres, no al entrar.
+  // Así el panel carga rápido y no gastamos una consulta que quizá nadie mire.
+  if (cualMostrar === "tabBitacora") cargarBitacora();
+}
+
+
+/* --------------------------------------------------------------------------
+   Pide la lista de clientes y la pinta en la tabla.
+
+   OJO: esta función pide a /api/admin/clientes, que el servidor solo
+   responde si la pulsera es de un administrador. Si un cliente lograra
+   llamar a esta función desde la consola del navegador, el servidor le
+   respondería 403 y la tabla se quedaría vacía.
+   -------------------------------------------------------------------------- */
+async function cargarListaDeClientes() {
+
+  const contenedor = document.getElementById("listaClientesAdmin");
+
+  try {
+    const respuesta = await pedirAlServidor("/api/admin/clientes");
+
+    // El 403 significa "sé quién eres, pero esto no es para ti".
+    if (respuesta.status === 403) {
+      contenedor.innerHTML = `<div class="cargando">No tienes permiso para ver esta sección.</div>`;
+      return;
+    }
+
+    const datos = await respuesta.json();
+
+    // ----------------------------------------------------------------------
+    // Armamos la tabla juntando pedazos de texto HTML.
+    //
+    // Empezamos con el renglón de títulos.
+    // ----------------------------------------------------------------------
+    let html = `<table>
+      <tr>
+        <th>Cliente</th>
+        <th>Profesión</th>
+        <th>Correo</th>
+        <th style="text-align:right">Saldo actual</th>
+        <th>Historial</th>
+        <th></th>
+      </tr>`;
+
+    // ----------------------------------------------------------------------
+    // Una fila por cada cliente.
+    //
+    // "veces_sin_dinero" es cuántas veces se quedó en ceros en los últimos
+    // 90 días. Lo convertimos en un semáforo, porque un número suelto no
+    // dice nada y un color sí: 0 veces es verde, 1 es ámbar, 2 o más es rojo.
+    // ----------------------------------------------------------------------
+    for (const c of datos.clientes) {
+
+      let clase = "bajo", texto = "Sin sobregiros";
+      if (c.veces_sin_dinero === 1) { clase = "medio"; texto = "1 sobregiro"; }
+      if (c.veces_sin_dinero >= 2)  { clase = "alto";  texto = c.veces_sin_dinero + " sobregiros"; }
+
+      html += `<tr>
+        <td><strong>${c.nombre}</strong></td>
+        <td>${c.profesion}</td>
+        <td style="font-size:12px;color:var(--texto-gris)">${c.correo}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums">${pesos(c.dinero_en_el_banco)}</td>
+        <td><span class="score-badge ${clase}">${texto}</span></td>
+        <td><button class="boton-ver" onclick="verFichaDeCliente('${c.id}','${c.nombre}')">Ver análisis</button></td>
+      </tr>`;
+    }
+
+    html += "</table>";
+    contenedor.innerHTML = html;
+
+  } catch (error) {
+    // Si fue la sesión vencida, pedirAlServidor ya sacó al usuario al login.
+    if (error.message === "sesion vencida") return;
+    contenedor.innerHTML = `<div class="cargando">No pude cargar la lista: ${error.message}</div>`;
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   Pide la bitácora de seguridad y la pinta.
+
+   Esta tabla es la prueba visible de que el sistema está vigilando. En la
+   presentación sirve para algo muy concreto: entras como María, intentas
+   ver los datos de Carlos, y luego entras como admin y le enseñas al juez
+   el renglón rojo que quedó registrado.
+   -------------------------------------------------------------------------- */
+async function cargarBitacora() {
+
+  const contenedor = document.getElementById("listaBitacora");
+
+  try {
+    const respuesta = await pedirAlServidor("/api/admin/bitacora");
+    if (respuesta.status === 403) {
+      contenedor.innerHTML = `<div class="cargando">No tienes permiso para ver esta sección.</div>`;
+      return;
+    }
+
+    const datos = await respuesta.json();
+
+    let html = `<table>
+      <tr>
+        <th>Momento</th>
+        <th>Usuario</th>
+        <th>Acción</th>
+        <th>Detalle</th>
+        <th>Resultado</th>
+      </tr>`;
+
+    for (const linea of datos.bitacora) {
+
+      // permitido viene como 1 o 0 porque SQLite no tiene verdadero/falso.
+      const paso = linea.permitido === 1;
+
+      // Las filas negadas se pintan con fondo rojo pálido para que salten
+      // a la vista sin tener que leerlas una por una.
+      const fondo = paso ? "" : ' style="background:#FDEAEA"';
+
+      html += `<tr${fondo}>
+        <td style="font-family:Consolas,monospace;font-size:12px">${linea.momento}</td>
+        <td>${linea.id_usuario || "—"}</td>
+        <td>${linea.accion}</td>
+        <td style="font-size:13px;color:var(--texto-gris)">${linea.detalle || ""}</td>
+        <td><span class="score-badge ${paso ? "bajo" : "alto"}">${paso ? "Permitido" : "Bloqueado"}</span></td>
+      </tr>`;
+    }
+
+    html += "</table>";
+    contenedor.innerHTML = html;
+
+  } catch (error) {
+    if (error.message === "sesion vencida") return;
+    contenedor.innerHTML = `<div class="cargando">No pude cargar la bitácora: ${error.message}</div>`;
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   El analista hace clic en un cliente y ve su análisis completo.
+
+   Reutilizamos las MISMAS funciones de pintado que usa el panel del cliente
+   (pintarSaldo, pintarScore, etc.), porque el servidor devuelve los datos
+   con la misma forma para los dos. Lo único distinto es dónde se dibujan.
+   -------------------------------------------------------------------------- */
+async function verFichaDeCliente(idDelCliente, nombreDelCliente) {
+
+  clienteQueEstoyViendo = idDelCliente;
+  document.getElementById("nombreFichaAdmin").textContent = nombreDelCliente;
+  mostrarSolo("pantallaFichaAdmin");
+
+  const contenedor = document.getElementById("contenedorFichaAdmin");
+  contenedor.innerHTML = `<div class="cargando">Cargando análisis...</div>`;
+
+  try {
+    const respuesta = await pedirAlServidor("/api/analisis/" + idDelCliente);
+
+    if (!respuesta.ok) {
+      contenedor.innerHTML = `<div class="cargando">No pude abrir esta ficha.</div>`;
+      return;
+    }
+
+    const datos = await respuesta.json();
+
+    // ----------------------------------------------------------------------
+    // Armamos un resumen compacto. El analista no necesita el simulador de
+    // compras (ese es para que el cliente tome SUS decisiones); necesita
+    // el score, el riesgo y la predicción.
+    // ----------------------------------------------------------------------
+    // Apodos cortos para no escribir datos.analisis cincuenta veces.
+    const a = datos.analisis;
+    const s = datos.score;
+    const p = datos.prediccion;
+
+    // ----------------------------------------------------------------------
+    // Los cuatro números que un analista de riesgo mira primero.
+    //
+    // Reutilizamos la clase "indicador", la misma de las tarjetas del panel
+    // del cliente, para que las dos vistas se vean como el mismo producto.
+    // ----------------------------------------------------------------------
+    contenedor.innerHTML = `
+      <div class="rejilla">
+        <div class="indicador" style="border-left-color:${s.color}">
+          <div class="titulo">Score de liquidez</div>
+          <div class="valor">${s.score}</div>
+          <div class="detalle">${s.categoria}</div>
+        </div>
+        <div class="indicador" style="border-left-color:#023373">
+          <div class="titulo">Saldo actual</div>
+          <div class="valor">${pesos(a.dinero_en_el_banco)}</div>
+          <div class="detalle">al día de hoy</div>
+        </div>
+        <div class="indicador" style="border-left-color:#024873">
+          <div class="titulo">Días de colchón</div>
+          <div class="valor">${a.dias_de_colchon}</div>
+          <div class="detalle">puede vivir sin cobrar nada</div>
+        </div>
+        <div class="indicador" style="border-left-color:${p.se_queda_sin_dinero ? "#D92525" : "#1B8A5A"}">
+          <div class="titulo">Línea recomendada</div>
+          <!-- Si no hay línea, el texto es largo y no cabe al tamaño normal.
+               El operador "? :" elige un tamaño más chico solo en ese caso. -->
+          <div class="valor" style="font-size:${s.linea_recomendada > 0 ? "26px" : "19px"}">
+            ${s.linea_recomendada > 0 ? pesos(s.linea_recomendada) : "No recomendada"}
+          </div>
+          <div class="detalle">pago máximo ${pesos(s.pago_mensual_maximo)} al mes</div>
+        </div>
+      </div>
+
+      <div class="tarjeta" style="margin-top:18px">
+        <h3>De dónde salen los ${s.score} puntos</h3>
+        <div id="fichaDesglose"></div>
+      </div>
+
+      <div class="tarjeta" style="margin-top:18px">
+        <h3>Proyección de saldo a 21 días</h3>
+        <div id="fichaGrafica"></div>
+        <div class="alerta ${p.se_queda_sin_dinero ? "peligro" : "tranquilo"}" style="margin-top:14px">
+          ${p.se_queda_sin_dinero
+            ? `<strong>Alerta:</strong> la proyección cruza a saldo negativo el
+               <strong>día ${p.dia_del_problema}</strong>. Su punto más bajo sería
+               ${pesos(p.saldo_mas_bajo)}.`
+            : `<strong>Sin alertas.</strong> No cruza a saldo negativo en el periodo.
+               Su punto más bajo sería ${pesos(p.saldo_mas_bajo)}.`}
+        </div>
+      </div>
+    `;
+
+    // ----------------------------------------------------------------------
+    // Pintamos el desglose del score, exactamente con el mismo formato de
+    // barras que ve el cliente. El analista y el cliente miran los mismos
+    // números: si el banco rechaza un crédito, puede señalar cuál barra
+    // fue la que bajó el puntaje.
+    //
+    // .map() recorre la lista y devuelve una lista nueva con el HTML de
+    // cada fila; .join("") las pega todas en un solo texto.
+    // ----------------------------------------------------------------------
+    document.getElementById("fichaDesglose").innerHTML = s.detalle_de_notas.map(parte => `
+      <div class="barra-fila">
+        <div class="barra-encabezado">
+          <span><strong>${parte.nombre}</strong> (${parte.peso}% del total)</span>
+          <span>${parte.nota} / 100</span>
+        </div>
+        <div class="barra-fondo">
+          <div class="barra-relleno" style="width:${parte.nota}%"></div>
+        </div>
+        <div class="barra-nota">${parte.que_significa}</div>
+      </div>
+    `).join("");
+
+    // ----------------------------------------------------------------------
+    // Dibujamos la gráfica reusando la función del panel del cliente.
+    //
+    // dibujarGrafica devuelve el dibujo en formato SVG como texto, así que
+    // se puede meter en cualquier lado. Por eso se reutiliza tal cual.
+    // El segundo parámetro es null porque aquí no hay línea de comparación.
+    // ----------------------------------------------------------------------
+    document.getElementById("fichaGrafica").innerHTML = dibujarGrafica(p.dias, null);
+
+  } catch (error) {
+    if (error.message === "sesion vencida") return;
+    contenedor.innerHTML = `<div class="cargando">Error: ${error.message}</div>`;
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   Regresa de la ficha de un cliente a la lista completa.
+   -------------------------------------------------------------------------- */
+function volverALaLista() {
+  clienteQueEstoyViendo = null;
+  mostrarSolo("pantallaAdmin");
+}
+
+
+/* ==========================================================================
+   PARTE 1 — EL LOGIN
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Llena los campos al hacer clic en una cuenta de demostración.
+
+   "document.getElementById" busca un elemento por su id. Es la instrucción
+   más usada de todo JavaScript. Se lee: "del documento, dame el elemento
+   con este id".
+
+   ".value" es lo que está escrito dentro de una caja de texto.
+   -------------------------------------------------------------------------- */
+function llenarDemo(correo, contrasena) {
+  document.getElementById("campoCorreo").value = correo;
+  document.getElementById("campoContrasena").value = contrasena;
+}
+
+
+/* --------------------------------------------------------------------------
+   LA FUNCIÓN DE ENTRAR
+
+   ¿QUÉ SIGNIFICA "async" Y "await"?
+
+   Pedirle datos al servidor tarda. Puede ser medio segundo o tres.
+   Si el programa se quedara congelado esperando, la página se sentiría
+   trabada y el usuario creería que se descompuso.
+
+   "async" marca una función como "esta va a esperar cosas".
+   "await" significa "espera aquí a que llegue la respuesta, pero deja que
+   el resto de la página siga respondiendo mientras tanto".
+
+   Es la diferencia entre pedir una pizza y quedarte parado en la puerta sin
+   moverte, o pedirla y seguir viendo la tele hasta que toquen el timbre.
+   -------------------------------------------------------------------------- */
+async function intentarEntrar() {
+
+  // Sacamos lo que el usuario escribió en las dos cajas.
+  const correoEscrito = document.getElementById("campoCorreo").value;
+  const contrasenaEscrita = document.getElementById("campoContrasena").value;
+
+  const cajaDeError = document.getElementById("errorLogin");
+  const boton = document.getElementById("botonEntrar");
+
+  // ------------------------------------------------------------------------
+  // Revisión rápida antes de molestar al servidor: ¿escribió algo?
+  // Validar de este lado ahorra un viaje de ida y vuelta innecesario.
+  // ------------------------------------------------------------------------
+  if (correoEscrito === "" || contrasenaEscrita === "") {
+    cajaDeError.textContent = "Escribe tu correo y tu contraseña";
+    cajaDeError.classList.remove("oculto");
+    return;   // "return" corta la función aquí. No sigue.
+  }
+
+  // Bloqueamos el botón mientras esperamos, para que nadie le dé 5 veces.
+  boton.disabled = true;
+  boton.textContent = "Entrando...";
+  cajaDeError.classList.add("oculto");
+
+  // ------------------------------------------------------------------------
+  // "try / catch" es la red de seguridad.
+  //   - lo de "try"   se intenta
+  //   - si truena, en vez de romperse la página, salta a "catch"
+  // Sin esto, si el servidor está apagado la página se quedaría muda y el
+  // usuario no sabría por qué.
+  // ------------------------------------------------------------------------
+  try {
+
+    // ----------------------------------------------------------------------
+    // "fetch" es la instrucción para hablar con el servidor.
+    //
+    //   method: "POST"   → le vamos a MANDAR datos, no solo pedir
+    //   headers          → le avisamos "lo que va adentro es JSON"
+    //   body             → los datos en sí
+    //
+    // JSON.stringify convierte un objeto de JavaScript a texto, porque por
+    // internet solo viaja texto. Del otro lado, FastAPI lo vuelve a armar.
+    // ----------------------------------------------------------------------
+    const respuesta = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        correo: correoEscrito,
+        contrasena: contrasenaEscrita
+      })
+    });
+
+    // ----------------------------------------------------------------------
+    // ".ok" es verdadero si el servidor respondió bien (código 200).
+    // Si mandó el 401 de "no autorizado", ".ok" es falso.
+    // ----------------------------------------------------------------------
+    if (!respuesta.ok) {
+      cajaDeError.textContent = "Correo o contraseña incorrectos";
+      cajaDeError.classList.remove("oculto");
+      boton.disabled = false;
+      boton.textContent = "Iniciar sesión";
+      return;
+    }
+
+    // ".json()" convierte la respuesta de texto a un objeto usable.
+    const usuario = await respuesta.json();
+
+    // ----------------------------------------------------------------------
+    // GUARDAMOS LA PULSERA. Esta es la línea nueva más importante del login.
+    //
+    // A partir de aquí, cada petición que haga la página va a llevar este
+    // token en el encabezado, y es lo que le demuestra al servidor quién
+    // somos sin volver a mandar la contraseña nunca más.
+    // ----------------------------------------------------------------------
+    miPulsera = usuario.token;
+    miRol = usuario.rol;
+    idDelUsuarioQueEntro = usuario.id;
+
+    // Limpiamos la contraseña de la pantalla en cuanto ya no hace falta.
+    document.getElementById("campoContrasena").value = "";
+
+    // ----------------------------------------------------------------------
+    // EL SERVIDOR DECIDE QUÉ PANEL TE TOCA, no el usuario.
+    //
+    // El rol viene dentro de la respuesta del login, y el login solo lo
+    // pone después de haber verificado la contraseña contra la base.
+    //
+    // Alguien podría abrir la consola del navegador y escribir
+    // miRol = "admin" para colarse al panel del analista. Lo vería vacío:
+    // la tabla se llena con datos que pide al servidor, y el servidor
+    // revisa el rol que dice LA PULSERA, no el que dice el navegador.
+    // Vería un cascarón sin un solo dato.
+    // ----------------------------------------------------------------------
+    if (usuario.rol === "admin") {
+      mostrarSolo("pantallaAdmin");
+      document.getElementById("nombreAdmin").textContent = usuario.nombre;
+      cargarListaDeClientes();
+    } else {
+      mostrarSolo("pantallaBanco");
+      document.getElementById("saludoUsuario").textContent = "Hola, " + usuario.nombre;
+      cargarDatosDelBanco();
+    }
+
+  } catch (error) {
+    // Esto pasa si el servidor no está corriendo.
+    cajaDeError.textContent = "No se pudo conectar con el servidor";
+    cajaDeError.classList.remove("oculto");
+    boton.disabled = false;
+    boton.textContent = "Iniciar sesión";
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   CERRAR SESIÓN
+
+   Regresamos al login y BORRAMOS los datos guardados. Borrarlos importa:
+   si no lo hiciéramos y entrara otra persona, alcanzaría a ver por un
+   instante el saldo del anterior. En un banco eso sería gravísimo.
+   -------------------------------------------------------------------------- */
+async function cerrarSesion() {
+
+  // ------------------------------------------------------------------------
+  // PRIMERO le avisamos al servidor que destruya la pulsera.
+  //
+  // ¿Por qué no basta con olvidarla de este lado? Porque el token seguiría
+  // siendo válido en el servidor durante los 30 minutos que le quedan. Si
+  // alguien lo hubiera copiado (de un café internet, de la memoria del
+  // navegador), podría seguir entrando con él aunque tú ya "saliste".
+  //
+  // Al borrarlo de la tabla sesiones, deja de servir en ese instante.
+  // ------------------------------------------------------------------------
+  try {
+    await pedirAlServidor("/api/salir", { method: "POST" });
+  } catch (error) {
+    // Si el servidor no responde, igual limpiamos de este lado. No queremos
+    // que un problema de red deje al usuario atrapado en su sesión.
+  }
+
+  // Ahora sí borramos todo lo de este lado.
+  miPulsera = null;
+  miRol = null;
+  idDelUsuarioQueEntro = null;
+  datosDelUsuario = null;
+  clienteQueEstoyViendo = null;
+
+  mostrarSolo("pantallaLogin");
+
+  document.getElementById("campoCorreo").value = "";
+  document.getElementById("campoContrasena").value = "";
+  document.getElementById("errorLogin").classList.add("oculto");
+
+  const boton = document.getElementById("botonEntrar");
+  boton.disabled = false;
+  boton.textContent = "Iniciar sesión";
+
+  // Dejamos la vista lista en la primera pestaña para la próxima entrada.
+  document.getElementById("todoElBanco").classList.add("oculto");
+  document.getElementById("cargando").classList.remove("oculto");
+}
+
+
+/* --------------------------------------------------------------------------
+   Enseña un mensaje rojo en la pantalla de login.
+
+   La usa pedirAlServidor cuando la sesión vence a mitad de una acción.
+   -------------------------------------------------------------------------- */
+function mostrarError(mensaje) {
+  const caja = document.getElementById("errorLogin");
+  caja.textContent = mensaje;
+  caja.classList.remove("oculto");
+}
+
+
+/* ==========================================================================
+   PARTE 2 — TRAER Y PINTAR LOS DATOS DEL BANCO
+   ========================================================================== */
+
+async function cargarDatosDelBanco() {
+
+  // ------------------------------------------------------------------------
+  // Pedimos el análisis completo. El servidor hace los 5 pasos y devuelve todo.
+  //
+  // Fíjate que va por pedirAlServidor y no por fetch directo: así lleva la
+  // pulsera puesta. Sin ella el servidor respondería 401 y no veríamos nada.
+  // ------------------------------------------------------------------------
+  const respuesta = await pedirAlServidor("/api/analisis/" + idDelUsuarioQueEntro);
+  datosDelUsuario = await respuesta.json();
+
+  // Escondemos el "Cargando..." y mostramos el contenido.
+  document.getElementById("cargando").classList.add("oculto");
+  document.getElementById("todoElBanco").classList.remove("oculto");
+
+  // Y llamamos a cada función que pinta su pedazo de la pantalla.
+  pintarSaldo();
+  pintarIndicadores();
+  pintarConsejo();
+  pintarMovimientos();
+  pintarScore();
+  pintarPrediccion();
+}
+
+
+/* --------------------------------------------------------------------------
+   FUNCIÓN AYUDANTE: formatear dinero
+
+   Convierte 18400 en "$18,400". Sin esto los números se ven como código.
+
+   "toLocaleString" es una función que ya trae JavaScript. Le dices el país
+   ("es-MX" = español de México) y acomoda las comas donde van.
+
+   "Math.round" redondea al entero más cercano, para no mostrar centavos.
+   -------------------------------------------------------------------------- */
+function pesos(cantidad) {
+  return "$" + Math.round(cantidad).toLocaleString("es-MX");
+}
+
+
+/* ---- La tarjeta azul del saldo ---- */
+function pintarSaldo() {
+  const a = datosDelUsuario.analisis;
+
+  document.getElementById("saldoGrande").textContent = pesos(a.dinero_en_el_banco);
+  document.getElementById("titularCuenta").textContent = a.nombre;
+
+  // ------------------------------------------------------------------------
+  // Un número de cuenta falso pero creíble, armado del id del usuario.
+  //
+  //   .toUpperCase()  → lo pasa a MAYÚSCULAS
+  //   .slice(0, 3)    → toma las primeras 3 letras ("MARIA" → "MAR")
+  //
+  // Es puro adorno para que se sienta una cuenta real en la demo.
+  // ------------------------------------------------------------------------
+  document.getElementById("numeroCuenta").textContent =
+    "**** " + idDelUsuarioQueEntro.toUpperCase().slice(0, 3) + "7 4821";
+}
+
+
+/* ---- Las 4 cajitas del resumen ---- */
+function pintarIndicadores() {
+  const a = datosDelUsuario.analisis;
+
+  // ------------------------------------------------------------------------
+  // Armamos una lista con los 4 indicadores. Cada uno es un objeto con
+  // su título, su valor, su explicación y su color de borde.
+  //
+  // Hacerlo así (datos primero, dibujo después) evita repetir el mismo
+  // HTML cuatro veces. Si mañana quieres un quinto indicador, agregas un
+  // renglón a esta lista y ya.
+  // ------------------------------------------------------------------------
+  const losCuatro = [
+    {
+      titulo: "Días de colchón",
+      valor: a.dias_de_colchon + " días",
+      detalle: "Lo que aguantas sin cobrar un solo peso",
+      color: "var(--azul-medio)"
+    },
+    {
+      titulo: "Entra al mes",
+      valor: pesos(a.ingreso_al_mes),
+      detalle: "Promedio de tus últimos 3 meses",
+      color: "var(--verde-bien)"
+    },
+    {
+      titulo: "Próximo pago",
+      valor: "En " + a.dias_para_el_proximo_pago + (a.dias_para_el_proximo_pago === 1 ? " día" : " días"),
+      detalle: "Estimado: " + pesos(a.monto_del_proximo_pago),
+      color: "var(--ambar-cuidado)"
+    },
+    {
+      titulo: "Se te va al día",
+      valor: pesos(a.gasto_total_por_dia),
+      detalle: "Gastos fijos y variables juntos",
+      color: "var(--rojo-capital)"
+    }
+  ];
+
+  // ------------------------------------------------------------------------
+  // Construimos el HTML juntando texto.
+  //
+  // ¿QUÉ SON LAS COMILLAS INCLINADAS ` ` ?
+  // Se llaman "plantillas" y permiten meter variables dentro del texto con
+  // ${ }. Es mucho más legible que pegar pedazos con el signo +.
+  //
+  // ".map()" recorre la lista y devuelve una lista nueva transformada.
+  // ".join('')" pega todos los pedazos en un solo texto, sin separador.
+  // ------------------------------------------------------------------------
+  document.getElementById("rejillaIndicadores").innerHTML = losCuatro.map(ind => `
+    <div class="indicador" style="border-left-color:${ind.color}">
+      <div class="titulo">${ind.titulo}</div>
+      <div class="valor">${ind.valor}</div>
+      <div class="detalle">${ind.detalle}</div>
+    </div>
+  `).join("");
+}
+
+
+/* ---- El consejo de la IA ---- */
+function pintarConsejo() {
+  const c = datosDelUsuario.consejo;
+
+  document.getElementById("textoConsejo").textContent = c.texto;
+
+  // Decimos honestamente si lo escribió la IA o el texto de respaldo.
+  // Ser transparente en esto suma puntos con los jueces, no los resta.
+  document.getElementById("firmaConsejo").textContent =
+    c.vino_de_la_ia
+      ? "Redactado por inteligencia artificial a partir de los números calculados"
+      : "Texto generado por el sistema (la IA no estaba disponible)";
+}
+
+
+/* ---- La lista de movimientos ---- */
+function pintarMovimientos() {
+  const a = datosDelUsuario.analisis;
+
+  // ------------------------------------------------------------------------
+  // ENTRADAS: los pagos que recibió.
+  //
+  // ".slice()" hace una copia de la lista. Copiamos ANTES de ordenar porque
+  // ".reverse()" modifica la lista original, y no queremos alterar los datos
+  // que nos mandó el servidor. Es una buena costumbre: no ensucies lo que
+  // te prestaron.
+  // ------------------------------------------------------------------------
+  const entradas = a.pagos_recibidos.slice().reverse();
+
+  document.getElementById("listaEntradas").innerHTML = entradas.map(pago => `
+    <div class="movimiento">
+      <div>
+        <div class="quien">${pago.cliente}</div>
+        <div class="cuando">${pago.fecha}</div>
+      </div>
+      <div class="cantidad entrada">+ ${pesos(pago.monto)}</div>
+    </div>
+  `).join("");
+
+  // ------------------------------------------------------------------------
+  // SALIDAS: los gastos fijos, ordenados por el que toca pagar primero.
+  //
+  // ".sort()" ordena. La función de adentro compara dos elementos:
+  // si el resultado es negativo, el primero va antes.
+  // Restar (x - y) es la forma estándar de ordenar de menor a mayor.
+  // ------------------------------------------------------------------------
+  const salidas = a.gastos_fijos_lista.slice().sort((x, y) => x.se_paga_en - y.se_paga_en);
+
+  document.getElementById("listaSalidas").innerHTML = salidas.map(gasto => `
+    <div class="movimiento">
+      <div>
+        <div class="quien">${gasto.concepto}</div>
+        <div class="cuando">Se paga en ${gasto.se_paga_en} ${gasto.se_paga_en === 1 ? "día" : "días"}</div>
+      </div>
+      <div class="cantidad salida">- ${pesos(gasto.monto)}</div>
+    </div>
+  `).join("");
+}
+
+
+/* ---- El score y sus 6 barras ---- */
+function pintarScore() {
+  const s = datosDelUsuario.score;
+
+  document.getElementById("numeroScore").textContent = s.score;
+  document.getElementById("numeroScore").style.color = s.color;
+
+  const etiqueta = document.getElementById("categoriaScore");
+  etiqueta.textContent = s.categoria;
+  etiqueta.style.background = s.color;
+
+  document.getElementById("explicacionScore").textContent = s.explicacion_corta;
+
+  // ------------------------------------------------------------------------
+  // Si la línea recomendada es 0, no decimos "$0" a secas: eso se lee como
+  // un error del sistema. Decimos por qué, que es más honesto y más útil.
+  // ------------------------------------------------------------------------
+  document.getElementById("lineaCredito").textContent =
+    s.linea_recomendada > 0
+      ? pesos(s.linea_recomendada)
+      : "No recomendada por ahora";
+
+  document.getElementById("pagoMensual").textContent = pesos(s.pago_mensual_maximo);
+
+  // ------------------------------------------------------------------------
+  // Las 6 barras del desglose.
+  // El ancho de cada barra es la nota (de 0 a 100) puesta como porcentaje.
+  // ------------------------------------------------------------------------
+  document.getElementById("barrasDelScore").innerHTML = s.detalle_de_notas.map(parte => `
+    <div class="barra-fila">
+      <div class="barra-encabezado">
+        <span><strong>${parte.nombre}</strong> (${parte.peso}% del total)</span>
+        <span>${parte.nota} / 100</span>
+      </div>
+      <div class="barra-fondo">
+        <div class="barra-relleno" style="width:${parte.nota}%"></div>
+      </div>
+      <div class="barra-nota">${parte.que_significa}</div>
+    </div>
+  `).join("");
+}
+
+
+/* ---- La predicción de 21 días ---- */
+function pintarPrediccion() {
+  const p = datosDelUsuario.prediccion;
+  const aviso = document.getElementById("avisoPrediccion");
+
+  // ------------------------------------------------------------------------
+  // El aviso cambia de color y de texto según si hay problema o no.
+  // ------------------------------------------------------------------------
+  if (p.se_queda_sin_dinero) {
+    aviso.className = "alerta peligro";
+    aviso.innerHTML =
+      `<strong>Atención:</strong> con este ritmo te quedas sin dinero el
+       <strong>día ${p.dia_del_problema}</strong>. Tu punto más bajo sería
+       ${pesos(p.saldo_mas_bajo)}. Todavía hay tiempo de moverle.`;
+  } else {
+    aviso.className = "alerta tranquilo";
+    aviso.innerHTML =
+      `<strong>Vas bien.</strong> En estos 21 días no te quedas sin dinero.
+       Tu punto más bajo sería ${pesos(p.saldo_mas_bajo)} y terminarías con
+       ${pesos(p.saldo_final)}.`;
+  }
+
+  // Dibujamos la gráfica. El segundo parámetro es null porque aquí no hay
+  // una segunda línea de comparación (esa solo aparece en el simulador).
+  document.getElementById("graficaPrediccion").innerHTML =
+    dibujarGrafica(p.dias, null);
+}
+
+
+/* ==========================================================================
+   PARTE 3 — LA GRÁFICA
+
+   ¿QUÉ ES SVG?
+   Es un formato de dibujo hecho con texto. En vez de una foto con pixeles,
+   son instrucciones: "traza una línea de aquí a acá". Por eso se ve nítido
+   en cualquier tamaño de pantalla y no pesa nada.
+
+   ¿POR QUÉ NO USAMOS UNA LIBRERÍA DE GRÁFICAS?
+   Porque una librería serían 300 KB descargados solo para dibujar 21 puntos,
+   y porque así el código se puede explicar completo. Nada de caja negra.
+
+   OJO CON EL EJE VERTICAL: en SVG el cero está ARRIBA y los números crecen
+   hacia ABAJO. Es al revés de como uno lo imagina. Por eso, para convertir
+   dinero en posición, hay que restar en vez de sumar.
+   ========================================================================== */
+
+function dibujarGrafica(listaDeDias, listaDeDiasAnterior) {
+
+  // ------------------------------------------------------------------------
+  // MEDIDAS DEL LIENZO. "const" porque no cambian nunca.
+  // El margen es el espacio para las etiquetas de los lados.
+  // ------------------------------------------------------------------------
+  const ancho = 860;
+  const alto = 300;
+  const margenIzq = 62;
+  const margenDer = 18;
+  const margenArriba = 18;
+  const margenAbajo = 34;
+
+  // El área donde de verdad se dibuja la línea.
+  const anchoUtil = ancho - margenIzq - margenDer;
+  const altoUtil = alto - margenArriba - margenAbajo;
+
+  // ------------------------------------------------------------------------
+  // ENCONTRAR EL SALDO MÁS ALTO Y EL MÁS BAJO.
+  //
+  // Los necesitamos para saber a qué escala dibujar. Si el más alto son
+  // 50,000 pesos, ese valor tiene que quedar hasta arriba del lienzo.
+  //
+  // "Math.max(...)" devuelve el mayor de una lista de números.
+  // Los tres puntos "..." desarman la lista en números sueltos, porque
+  // Math.max no acepta listas, acepta argumentos separados.
+  // ------------------------------------------------------------------------
+  let todosLosSaldos = listaDeDias.map(d => d.saldo);
+
+  // Si hay una segunda línea (el simulador), sus valores también cuentan
+  // para la escala. Si no, las dos líneas no se podrían comparar.
+  if (listaDeDiasAnterior) {
+    todosLosSaldos = todosLosSaldos.concat(listaDeDiasAnterior.map(d => d.saldo));
+  }
+
+  let saldoMaximo = Math.max(...todosLosSaldos);
+  let saldoMinimo = Math.min(...todosLosSaldos, 0);   // El 0 siempre se ve.
+
+  // Un respiro del 10% arriba y abajo, para que la línea no toque los bordes.
+  const respiro = (saldoMaximo - saldoMinimo) * 0.1 || 1000;
+  saldoMaximo += respiro;
+  saldoMinimo -= respiro;
+
+  // ------------------------------------------------------------------------
+  // LAS DOS FUNCIONES QUE CONVIERTEN DATOS EN POSICIONES.
+  //
+  // posicionX: del día (1 a 21) a un punto horizontal del lienzo.
+  // posicionY: del saldo en pesos a un punto vertical.
+  //
+  // En posicionY fíjate en la resta: entre MÁS dinero, MENOR es el número
+  // que devuelve, porque en SVG lo de arriba tiene coordenadas chicas.
+  // ------------------------------------------------------------------------
+  function posicionX(numeroDeDia) {
+    return margenIzq + ((numeroDeDia - 1) / (listaDeDias.length - 1)) * anchoUtil;
+  }
+
+  function posicionY(saldoEnPesos) {
+    const proporcion = (saldoEnPesos - saldoMinimo) / (saldoMaximo - saldoMinimo);
+    return margenArriba + altoUtil - (proporcion * altoUtil);
+  }
+
+  // "piezas" es donde vamos guardando cada pedazo de dibujo, en orden.
+  // Lo que se agrega primero queda ABAJO; lo último queda ENCIMA.
+  let piezas = [];
+
+  // ------------------------------------------------------------------------
+  // CAPA 1 — Las líneas horizontales de fondo y sus etiquetas de dinero.
+  // Sirven para poder leer un valor aproximado de un vistazo.
+  // ------------------------------------------------------------------------
+  for (let i = 0; i <= 4; i++) {
+    const valorDeEstaLinea = saldoMinimo + (saldoMaximo - saldoMinimo) * (i / 4);
+    const y = posicionY(valorDeEstaLinea);
+
+    piezas.push(`<line x1="${margenIzq}" y1="${y}" x2="${ancho - margenDer}" y2="${y}"
+                       stroke="#E8EDF2" stroke-width="1"/>`);
+
+    piezas.push(`<text x="${margenIzq - 8}" y="${y + 4}" text-anchor="end"
+                       font-size="11" fill="#6B7785">${pesos(valorDeEstaLinea)}</text>`);
+  }
+
+  // ------------------------------------------------------------------------
+  // CAPA 2 — La raya punteada del cero.
+  //
+  // "stroke-dasharray" define el patrón de la raya: 6 pixeles de línea,
+  // 5 de hueco, y así sucesivamente.
+  //
+  // Solo la dibujamos si el cero cae dentro de lo que se ve.
+  // ------------------------------------------------------------------------
+  if (saldoMinimo < 0) {
+    const yDelCero = posicionY(0);
+    piezas.push(`<line x1="${margenIzq}" y1="${yDelCero}" x2="${ancho - margenDer}" y2="${yDelCero}"
+                       stroke="#64748B" stroke-width="2" stroke-dasharray="2,4"/>`);
+  }
+
+  // ------------------------------------------------------------------------
+  // CAPA 3 — La línea de comparación (solo en el simulador).
+  // Va primero para que quede DEBAJO de la línea principal.
+  // ------------------------------------------------------------------------
+  if (listaDeDiasAnterior) {
+    const puntosAnterior = listaDeDiasAnterior
+      .map(d => `${posicionX(d.dia)},${posicionY(d.saldo)}`)
+      .join(" ");
+
+    piezas.push(`<polyline points="${puntosAnterior}" fill="none"
+                           stroke="#9DB8D6" stroke-width="2.5" stroke-dasharray="7,5"/>`);
+  }
+
+  // ------------------------------------------------------------------------
+  // CAPA 4 — LA LÍNEA PRINCIPAL.
+  //
+  // "polyline" dibuja una línea que pasa por varios puntos seguidos.
+  // Los puntos van como "x1,y1 x2,y2 x3,y3..." separados por espacios.
+  //
+  // stroke-linejoin="round" redondea las esquinas donde la línea cambia
+  // de dirección. Sin esto se ven picos feos en los días de pago.
+  // ------------------------------------------------------------------------
+  const puntosDeLaLinea = listaDeDias
+    .map(d => `${posicionX(d.dia)},${posicionY(d.saldo)}`)
+    .join(" ");
+
+  piezas.push(`<polyline points="${puntosDeLaLinea}" fill="none"
+                         stroke="#024873" stroke-width="3"
+                         stroke-linejoin="round" stroke-linecap="round"/>`);
+
+  // ------------------------------------------------------------------------
+  // CAPA 5 — Los puntitos de cada día, pintados según su nivel de riesgo.
+  //
+  // El objeto "coloresPorNivel" funciona como un traductor: le das la
+  // palabra y te da el color. Es más limpio que tres "if" seguidos.
+  // ------------------------------------------------------------------------
+  const coloresPorNivel = {
+    bien:    "#024873",
+    cuidado: "#C77700",
+    peligro: "#D92525"
+  };
+
+  listaDeDias.forEach(dia => {
+    const x = posicionX(dia.dia);
+    const y = posicionY(dia.saldo);
+
+    // Los días de riesgo se dibujan más grandes, para que salten a la vista.
+    const radio = (dia.nivel === "bien") ? 3.5 : 5.5;
+
+    // El borde blanco alrededor del punto lo separa de la línea y hace que
+    // se lea mejor cuando hay varios puntos juntos.
+    piezas.push(`<circle cx="${x}" cy="${y}" r="${radio}"
+                         fill="${coloresPorNivel[dia.nivel]}"
+                         stroke="#FFFFFF" stroke-width="1.5"/>`);
+  });
+
+  // ------------------------------------------------------------------------
+  // CAPA 6 — Las etiquetas de los días abajo.
+  // Solo ponemos una de cada 5 (1, 6, 11, 16, 21) porque 21 números
+  // seguidos se encimarían y no se leería ninguno.
+  //
+  // El "%" es el residuo de la división: (dia - 1) % 5 === 0 se cumple
+  // en el día 1, 6, 11, 16 y 21.
+  // ------------------------------------------------------------------------
+  listaDeDias.forEach(dia => {
+    if ((dia.dia - 1) % 5 === 0 || dia.dia === listaDeDias.length) {
+      piezas.push(`<text x="${posicionX(dia.dia)}" y="${alto - 12}"
+                         text-anchor="middle" font-size="11" fill="#6B7785">
+                     Día ${dia.dia}
+                   </text>`);
+    }
+  });
+
+  // ------------------------------------------------------------------------
+  // ARMAMOS EL SVG COMPLETO.
+  //
+  // "viewBox" define el sistema de coordenadas interno del dibujo.
+  // Junto con width="100%" hace que la gráfica se estire o encoja sola
+  // según el tamaño de la pantalla, sin deformarse. Es lo que la hace
+  // funcionar igual de bien en una laptop que en un celular.
+  // ------------------------------------------------------------------------
+  return `<svg viewBox="0 0 ${ancho} ${alto}" width="100%"
+               style="max-width:${ancho}px; display:block; margin:0 auto;">
+            ${piezas.join("")}
+          </svg>`;
+}
+
+
+/* ==========================================================================
+   PARTE 4 — EL SIMULADOR DE COMPRAS
+   ========================================================================== */
+
+/* Los botones de montos rápidos solo escriben el número en la caja. */
+function ponerMonto(cantidad) {
+  document.getElementById("campoMonto").value = cantidad;
+}
+
+
+async function simularLaCompra() {
+
+  // ------------------------------------------------------------------------
+  // "Number(...)" convierte el texto de la caja a un número de verdad.
+  // Todo lo que se escribe en un input llega como TEXTO, aunque sean dígitos.
+  // Sin esta conversión, 5000 + 1 daría "50001" en vez de 5001.
+  // ------------------------------------------------------------------------
+  const montoDeLaCompra = Number(document.getElementById("campoMonto").value);
+
+  if (!montoDeLaCompra || montoDeLaCompra <= 0) {
+    alert("Escribe cuánto cuesta lo que quieres comprar");
+    return;
+  }
+
+  // Otra vez por pedirAlServidor, para que lleve la pulsera.
+  const respuesta = await pedirAlServidor("/api/simular-compra", {
+    method: "POST",
+    body: JSON.stringify({
+      id_del_cliente: idDelUsuarioQueEntro,
+      monto: montoDeLaCompra
+    })
+  });
+
+  const resultado = await respuesta.json();
+
+  // ------------------------------------------------------------------------
+  // Traducimos la palabra del semáforo a un color de la paleta.
+  // ------------------------------------------------------------------------
+  const coloresDelSemaforo = {
+    verde:    { fondo: "#E8F5EE", borde: "#1B8A5A" },
+    amarillo: { fondo: "#FFF6E5", borde: "#C77700" },
+    rojo:     { fondo: "#FDEAEA", borde: "#D92525" }
+  };
+
+  const color = coloresDelSemaforo[resultado.semaforo];
+
+  const caja = document.getElementById("cajaVeredicto");
+  caja.style.background = color.fondo;
+  caja.style.borderLeftColor = color.borde;
+
+  document.getElementById("textoVeredicto").textContent = resultado.mensaje;
+  document.getElementById("textoVeredicto").style.color = color.borde;
+
+  // ------------------------------------------------------------------------
+  // El detalle en números: qué le cuesta esta compra a su colchón.
+  // ------------------------------------------------------------------------
+  document.getElementById("detalleVeredicto").innerHTML = `
+    Esta compra de <strong>${pesos(resultado.monto_de_la_compra)}</strong>
+    te cuesta <strong>${resultado.dias_de_colchon_que_cuesta}</strong> días de
+    colchón. Tu punto más bajo pasaría de
+    <strong>${pesos(resultado.antes.saldo_mas_bajo)}</strong> a
+    <strong>${pesos(resultado.despues.saldo_mas_bajo)}</strong>.
+  `;
+
+  // Mostramos el bloque de resultados (empezaba escondido).
+  document.getElementById("resultadoSimulacion").classList.remove("oculto");
+
+  // ------------------------------------------------------------------------
+  // Y redibujamos la gráfica con LAS DOS líneas: la de después es la
+  // principal (azul sólido) y la de antes es la de comparación (punteada).
+  // ------------------------------------------------------------------------
+  document.getElementById("graficaSimulacion").innerHTML =
+    dibujarGrafica(resultado.despues.dias, resultado.antes.dias);
+}
+
+
+/* ==========================================================================
+   PARTE 5 — CAMBIAR DE PESTAÑA
+   ========================================================================== */
+
+function cambiarPestana(nombreDeLaSeccion, botonQueSeApreto) {
+
+  // ------------------------------------------------------------------------
+  // PASO 1 — Escondemos las 5 secciones.
+  //
+  // "querySelectorAll" busca TODOS los elementos que coincidan. El corchete
+  // significa "cuyo id empiece con 'seccion-'". Así no tenemos que escribir
+  // los 5 nombres a mano, y si mañana agregas una sexta pestaña, funciona
+  // sola sin tocar esta función.
+  // ------------------------------------------------------------------------
+  document.querySelectorAll("[id^='seccion-']").forEach(seccion => {
+    seccion.classList.add("oculto");
+  });
+
+  // PASO 2 — Mostramos solo la que pidieron.
+  document.getElementById("seccion-" + nombreDeLaSeccion).classList.remove("oculto");
+
+  // PASO 3 — Le quitamos la rayita roja a todas las pestañas...
+  document.querySelectorAll(".pestana").forEach(pestana => {
+    pestana.classList.remove("activa");
+  });
+
+  // ...y se la ponemos solo a la que apretaron.
+  botonQueSeApreto.classList.add("activa");
+}
+
+
+/* ==========================================================================
+   PARTE 6 — CONECTAR LOS BOTONES
+
+   ¿QUÉ ES "addEventListener"?
+   Se lee: "escucha este evento y cuando pase, corre esta función".
+   Es la forma correcta de conectar botones, mejor que escribir el onclick
+   dentro del HTML, porque deja todo el comportamiento junto en un lugar.
+   ========================================================================== */
+
+document.getElementById("botonEntrar").addEventListener("click", intentarEntrar);
+document.getElementById("botonSalir").addEventListener("click", cerrarSesion);
+document.getElementById("botonSimular").addEventListener("click", simularLaCompra);
+
+/* --------------------------------------------------------------------------
+   DETALLE DE COMODIDAD: entrar con la tecla Enter.
+
+   "keydown" se dispara cada vez que se presiona una tecla dentro del campo.
+   Revisamos si fue la tecla Enter y, si sí, hacemos lo mismo que el botón.
+
+   Sin esto, el usuario escribe su contraseña, presiona Enter por instinto,
+   no pasa nada, y piensa que la página está rota. Son 3 líneas que evitan
+   una mala impresión.
+   -------------------------------------------------------------------------- */
+document.getElementById("campoContrasena").addEventListener("keydown", evento => {
+  if (evento.key === "Enter") intentarEntrar();
+});
+
+document.getElementById("campoCorreo").addEventListener("keydown", evento => {
+  if (evento.key === "Enter") document.getElementById("campoContrasena").focus();
+});
+</script>
+
+</body>
+</html>

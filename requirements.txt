@@ -1,0 +1,18 @@
+# Librerías que hay que instalar para que el proyecto corra.
+# Se instalan todas de un jalón con:   pip install -r requirements.txt
+
+# El servidor web. Es quien define los endpoints (/api/analisis, etc.)
+fastapi
+
+# El programa que realmente escucha el puerto 8000 y atiende conexiones.
+# FastAPI define QUÉ responder; uvicorn se encarga de hablar por la red.
+uvicorn
+
+# Revisa que los datos que llegan tengan la forma correcta.
+# Viene incluido con fastapi, pero lo listamos para que quede claro.
+pydantic
+
+# La inteligencia artificial que redacta el consejo en español.
+# ES OPCIONAL: si no la instalas o no pones la llave, el proyecto funciona
+# igual con la explicación automática escrita a mano.
+groq
